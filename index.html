@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>成功日記 Success Journal</title>
+  <style>
+    * { box-sizing: border-box; font-family: "Noto Sans TC", sans-serif; }
+
+    body { margin: 0; padding: 0; background: #f3f6f9; color: #333; }
+
+    header {
+      background-color: #4a90e2; color: white; text-align: center; padding: 1rem;
+    }
+
+    .instructions {
+      max-width: 700px; margin: 0.5rem auto; text-align: left;
+      background: rgba(255,255,255,0.1); padding: 0.5rem 1rem;
+      border-radius: 5px;
+    }
+    .instructions summary {
+      cursor: pointer; font-weight: bold; list-style: none;
+    }
+    .instructions summary::-webkit-details-marker { display: none; }
+    .instructions div { margin-top: 0.5rem; line-height: 1.6; }
+
+    main {
+      display: flex; flex-direction: column; align-items: center; padding: 1rem;
+    }
+
+    .calendar {
+      background: white; border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 1rem; width: 100%; max-width: 700px;
+    }
+
+    .month-selector {
+      display: flex; justify-content: space-between; align-items: center;
+      width: 100%; max-width: 400px; margin: 0 auto 10px auto;
+    }
+
+    .month-selector button {
+      background-color: #4a90e2; color: white; border: none;
+      border-radius: 5px; padding: 0.4rem 1rem; cursor: pointer;
+    }
+
+    .month-selector button:hover { background-color: #357abd; }
+
+    .month-selector span { font-weight: bold; font-size: 1.2rem; }
+
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: center; padding: 5px; width: 14.28%; }
+    th { background-color: #e1ebf7; }
+    td {
+      border: 1px solid #ddd; height: 80px; vertical-align: top; cursor: pointer;
+    }
+    td.selected { background-color: #d0e8ff; }
+
+    .points-display { text-align: center; font-size: 1.1rem; margin-top: 1rem; }
+
+    .task-panel {
+      background: white; border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      width: 100%; max-width: 700px; margin-top: 1rem; padding: 1rem;
+    }
+
+    .task-panel-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1rem;
+    }
+    .task-panel-header h3 { margin: 0; }
+    
+    .manage-tasks-btn {
+      background-color: #4a90e2; color: white; border: none;
+      border-radius: 5px; padding: 0.5rem 1rem; cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .manage-tasks-btn:hover { background-color: #357abd; }
+    
+    .task-list { list-style: none; padding: 0; }
+    .task-list li { display: flex; align-items: center; margin: 0.4rem 0; }
+    input[type="checkbox"] { margin-right: 10px; }
+
+    /* 任務管理彈窗 */
+    .modal {
+      display: none; position: fixed; z-index: 1000;
+      left: 0; top: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+    .modal.show { display: flex; justify-content: center; align-items: center; }
+    .modal-content {
+      background: white; border-radius: 10px;
+      padding: 2rem; width: 90%; max-width: 500px;
+      max-height: 80vh; overflow-y: auto;
+    }
+    .modal-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 1rem;
+    }
+    .modal-header h2 { margin: 0; }
+    .close-btn {
+      background: none; border: none; font-size: 1.5rem;
+      cursor: pointer; color: #666;
+    }
+    .close-btn:hover { color: #000; }
+    
+    .manage-task-list { list-style: none; padding: 0; }
+    .manage-task-list li {
+      display: flex; align-items: center; gap: 0.5rem;
+      margin: 0.5rem 0; padding: 0.5rem;
+      border: 1px solid #ddd; border-radius: 5px;
+    }
+    .manage-task-list .task-text {
+      flex: 1; padding: 0.4rem;
+    }
+    .manage-task-list input[type="text"] {
+      flex: 1; padding: 0.4rem; border: 1px solid #ddd;
+      border-radius: 3px; font-size: 1rem;
+    }
+    .edit-btn, .delete-btn, .save-btn, .cancel-btn {
+      background-color: #4a90e2; color: white; border: none;
+      border-radius: 3px; padding: 0.3rem 0.6rem;
+      cursor: pointer; font-size: 0.85rem;
+    }
+    .delete-btn { background-color: #e74c3c; }
+    .save-btn { background-color: #27ae60; }
+    .cancel-btn { background-color: #95a5a6; }
+    .edit-btn:hover { background-color: #357abd; }
+    .delete-btn:hover { background-color: #c0392b; }
+    .save-btn:hover { background-color: #229954; }
+    .cancel-btn:hover { background-color: #7f8c8d; }
+    
+    .add-task-section {
+      margin-top: 1rem; padding-top: 1rem;
+      border-top: 1px solid #ddd;
+    }
+    .add-task-input {
+      width: 100%; padding: 0.5rem; margin-bottom: 0.5rem;
+      border: 1px solid #ddd; border-radius: 5px; font-size: 1rem;
+    }
+    .add-task-btn {
+      background-color: #27ae60; color: white; border: none;
+      border-radius: 5px; padding: 0.5rem 1rem;
+      cursor: pointer; width: 100%; font-size: 1rem;
+    }
+    .add-task-btn:hover { background-color: #229954; }
+
+    @media (max-width: 600px) {
+      th, td { font-size: 0.8rem; }
+      td { height: 60px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌟 成功日記 Success Journal 🌟</h1>
+    <p>記錄每天完成的任務，累積你的成功點數！</p>
+    <details class="instructions">
+      <summary>📖 使用說明</summary>
+      <div>
+        <p><strong>如何使用：</strong></p>
+        <ol>
+          <li>點擊日曆上的日期選擇要記錄的日子</li>
+          <li>勾選完成的任務項目</li>
+          <li>查看當日完成的點數</li>
+        </ol>
+        <p><strong>如何管理任務：</strong></p>
+        <ol>
+          <li>點擊任務面板右上角的「⚙️ 管理任務」按鈕</li>
+          <li><strong>新增任務</strong>：在最下方輸入框輸入任務名稱，點擊「➕ 新增任務」</li>
+          <li><strong>編輯任務</strong>：點擊任務旁的「編輯」按鈕，修改任務名稱後點擊「保存」</li>
+          <li><strong>刪除任務</strong>：點擊任務旁的「刪除」按鈕（會確認後刪除）</li>
+          <li>管理完成後點擊右上角「×」關閉彈窗</li>
+        </ol>
+      </div>
+    </details>
+  </header>
+
+  <main>
+    <div class="calendar">
+      <div class="month-selector">
+        <button id="prevMonth">←</button>
+        <span id="monthYear"></span>
+        <button id="nextMonth">→</button>
+      </div>
+      <table id="calendarTable">
+        <thead>
+          <tr>
+            <th>日</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="task-panel">
+      <div class="task-panel-header">
+        <h3 id="selectedDateTitle">📅 請先選擇日期</h3>
+        <button class="manage-tasks-btn" id="manageTasksBtn">⚙️ 管理任務</button>
+      </div>
+      <ul class="task-list" id="taskList"></ul>
+      <div class="points-display" id="pointsDisplay"></div>
+    </div>
+  </main>
+
+  <!-- 任務管理彈窗 -->
+  <div class="modal" id="taskModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📝 管理任務項目</h2>
+        <button class="close-btn" id="closeModal">&times;</button>
+      </div>
+      <ul class="manage-task-list" id="manageTaskList"></ul>
+      <div class="add-task-section">
+        <input type="text" class="add-task-input" id="newTaskInput" placeholder="輸入新任務名稱...">
+        <button class="add-task-btn" id="addTaskBtn">➕ 新增任務</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tbody = document.querySelector("#calendarTable tbody");
+    const monthYear = document.getElementById("monthYear");
+    const selectedDateTitle = document.getElementById("selectedDateTitle");
+    const taskListEl = document.getElementById("taskList");
+    const pointsDisplay = document.getElementById("pointsDisplay");
+    const manageTasksBtn = document.getElementById("manageTasksBtn");
+    const taskModal = document.getElementById("taskModal");
+    const closeModal = document.getElementById("closeModal");
+    const manageTaskList = document.getElementById("manageTaskList");
+    const newTaskInput = document.getElementById("newTaskInput");
+    const addTaskBtn = document.getElementById("addTaskBtn");
+
+    let currentDate = new Date();
+    let selectedDate = null;
+
+    // ---- LocalStorage 安全封裝 ----
+    const safeStorage = (() => {
+      try {
+        const test = "__test_key__";
+        localStorage.setItem(test, "ok");
+        localStorage.removeItem(test);
+        return localStorage;
+      } catch {
+        console.warn("⚠️ 本地儲存不可用，使用暫存模式。");
+        const memory = {};
+        return {
+          getItem: key => memory[key],
+          setItem: (key, value) => (memory[key] = value),
+          removeItem: key => delete memory[key]
+        };
+      }
+    })();
+
+    // ---- 任務管理功能 ----
+    function getTasks() {
+      const defaultTasks = [
+        "早起運動", "讀書30分鐘", "寫日記", "幫助他人", "學習新技能",
+        "完成工作或學業任務", "整理環境", "練習冥想",
+        "避免滑手機浪費時間", "保持好心情"
+      ];
+      const saved = safeStorage.getItem("customTasks");
+      return saved ? JSON.parse(saved) : defaultTasks;
+    }
+
+    function saveTasks(tasks) {
+      safeStorage.setItem("customTasks", JSON.stringify(tasks));
+    }
+
+    function openTaskModal() {
+      taskModal.classList.add("show");
+      renderManageTaskList();
+    }
+
+    function closeTaskModal() {
+      taskModal.classList.remove("show");
+      if (selectedDate) renderTasks(); // 重新渲染任務列表
+    }
+
+    function renderManageTaskList() {
+      const tasks = getTasks();
+      manageTaskList.innerHTML = "";
+      
+      tasks.forEach((task, index) => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <span class="task-text">${task}</span>
+          <button class="edit-btn" data-index="${index}">編輯</button>
+          <button class="delete-btn" data-index="${index}">刪除</button>
+        `;
+        manageTaskList.appendChild(li);
+      });
+
+      // 綁定編輯按鈕事件
+      document.querySelectorAll(".edit-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const index = parseInt(e.target.dataset.index);
+          editTask(e.target.parentElement, index);
+        });
+      });
+
+      // 綁定刪除按鈕事件
+      document.querySelectorAll(".delete-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const index = parseInt(e.target.dataset.index);
+          deleteTask(index);
+        });
+      });
+    }
+
+    function editTask(li, index) {
+      const tasks = getTasks();
+      const currentText = tasks[index];
+      
+      li.innerHTML = `
+        <input type="text" class="edit-input" value="${currentText}">
+        <button class="save-btn">保存</button>
+        <button class="cancel-btn">取消</button>
+      `;
+
+      const input = li.querySelector(".edit-input");
+      const saveBtn = li.querySelector(".save-btn");
+      const cancelBtn = li.querySelector(".cancel-btn");
+
+      input.focus();
+
+      saveBtn.addEventListener("click", () => {
+        const newText = input.value.trim();
+        if (newText) {
+          tasks[index] = newText;
+          saveTasks(tasks);
+          renderManageTaskList();
+        }
+      });
+
+      cancelBtn.addEventListener("click", () => {
+        renderManageTaskList();
+      });
+
+      input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          saveBtn.click();
+        }
+      });
+    }
+
+    function deleteTask(index) {
+      if (confirm("確定要刪除這個任務嗎？")) {
+        const tasks = getTasks();
+        tasks.splice(index, 1);
+        saveTasks(tasks);
+        renderManageTaskList();
+      }
+    }
+
+    function addTask() {
+      const newTask = newTaskInput.value.trim();
+      if (newTask) {
+        const tasks = getTasks();
+        tasks.push(newTask);
+        saveTasks(tasks);
+        newTaskInput.value = "";
+        renderManageTaskList();
+      }
+    }
+
+    // 事件監聽
+    manageTasksBtn.addEventListener("click", openTaskModal);
+    closeModal.addEventListener("click", closeTaskModal);
+    taskModal.addEventListener("click", (e) => {
+      if (e.target === taskModal) closeTaskModal();
+    });
+    addTaskBtn.addEventListener("click", addTask);
+    newTaskInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") addTask();
+    });
+
+    // ---- 日曆功能 ----
+    function generateCalendar(year, month) {
+      tbody.innerHTML = "";
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      monthYear.textContent = `${year} 年 ${month + 1} 月`;
+      let date = 1;
+
+      for (let i = 0; i < 6; i++) {
+        const row = document.createElement("tr");
+        for (let j = 0; j < 7; j++) {
+          const cell = document.createElement("td");
+          if (i === 0 && j < firstDay) {
+            cell.textContent = "";
+          } else if (date > daysInMonth) {
+            cell.textContent = "";
+          } else {
+            cell.dataset.date = `${year}-${month + 1}-${date}`;
+            cell.textContent = date;
+            cell.addEventListener("click", () => selectDate(cell.dataset.date));
+            date++;
+          }
+          row.appendChild(cell);
+        }
+        tbody.appendChild(row);
+      }
+    }
+
+    function selectDate(dateStr) {
+      selectedDate = dateStr;
+      document.querySelectorAll("td").forEach(td => td.classList.remove("selected"));
+      const target = [...document.querySelectorAll("td")].find(td => td.dataset.date === dateStr);
+      if (target) target.classList.add("selected");
+      selectedDateTitle.textContent = `📅 ${dateStr} 的任務`;
+      renderTasks();
+    }
+
+    function getAllRecords() {
+      return JSON.parse(safeStorage.getItem("successJournal") || "{}");
+    }
+
+    function getRecordsForDate(date) {
+      const all = getAllRecords();
+      const tasks = getTasks();
+      const record = all[date] || [];
+      // 確保記錄長度與任務數量一致
+      return [...record, ...new Array(Math.max(0, tasks.length - record.length)).fill(false)].slice(0, tasks.length);
+    }
+
+    function saveRecordsForDate(date, data) {
+      const all = getAllRecords();
+      all[date] = data;
+      safeStorage.setItem("successJournal", JSON.stringify(all));
+    }
+
+    function renderTasks() {
+      const tasks = getTasks();
+      taskListEl.innerHTML = "";
+      const data = getRecordsForDate(selectedDate);
+      
+      tasks.forEach((task, i) => {
+        const li = document.createElement("li");
+        const checked = data[i] ? "checked" : "";
+        li.innerHTML = `<input type="checkbox" id="task${i}" ${checked}>
+                        <label for="task${i}">${task}</label>`;
+        li.querySelector("input").addEventListener("change", e => {
+          data[i] = e.target.checked;
+          saveRecordsForDate(selectedDate, data);
+          updatePoints(data);
+        });
+        taskListEl.appendChild(li);
+      });
+      updatePoints(data);
+    }
+
+    function updatePoints(records) {
+      const score = records.filter(v => v).length;
+      pointsDisplay.textContent = `⭐ 今日點數：${score} / ${getTasks().length}`;
+    }
+
+    document.getElementById("prevMonth").onclick = () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+    };
+    
+    document.getElementById("nextMonth").onclick = () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+    };
+
+    generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+  </script>
+</body>
+</html>
